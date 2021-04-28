@@ -2,7 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{hyperref}
 
-\author{Meng Lu, Paula Moraga }
+\author{Meng Lu, Paula Moraga, Joaquin Cavieres }
 \date{September 2020}
 \usepackage{amsmath}
 \usepackage{natbib}
@@ -24,18 +24,22 @@
 
 \maketitle
 \begin{abstract} 
-Machine learning methods have been applied in NO$_2$ mapping and in several model comparison studies compared between each other and to data model-based methods including linear regression and Kriging. However, current studies rarely compare and discuss uncertainty quantification and interpretability across these methods. In this study, we focus on distribution prediction methods developed in INLA and Random Forest and the interpretability of the models, the findings are extensible to boosting ensemble-tree methods. Further, we compare a linear INLA, Lasso, Random Forest, and XGboost, and evaluated stack learning methods, with and without modeling spatial variations, in mapping NO$_2$ at European country level. We used national ground station measurements of NO$_2$ in Germany and Netherlands, of the year 2017, and the NO$_2$ prediction grid is at 100 m by 100 m resolution.   
+Ensemble tree-based statistical learning methods have been applied in NO$_2$ mapping and compared between each other and with data model methods including linear regression and Gaussian process models. However, the comparison is mainly based on prediction accuracy. In this study, we went a step further in systematically comparing between uncertainty quantification and latent space interpretability across algorithmic vs data models \citep{breiman2001statistical}. In this study, we focus on prediction intervals calculated using INLA \citep{blangiardo2015spatial} for latent Gaussian models (LGMs) and Random Forest models and their model interpretations. The findings are extensible to boosting ensemble-tree methods. Further, we compare a linear LGM, Lasso, Random Forest, and XGboost, and evaluated stack learning methods, with and without modeling spatial variations, in mapping NO$_2$ at the European country level, with several spatial validation methods. We used national ground station measurements of NO$_2$ in Germany and Netherlands, of the year 2017, and the NO$_2$ prediction grid is at 100 m by 100 m resolution.  
 \end{abstract}
 
 \section{Introduction}
-Ensemble tree-based Machine learning (ML) methods (e.g. random forest, boosting) have been introduced in statistical air pollution modelling and have been compared in \cite{chen2019comparison,kerckhoffs2019performance,luglobal}. However, in all the studies, comparisons are only based on the cross-validation accuracy of prediction mean, ignoring the prediction distributions for uncertainty quantification. Also not discussed is the ability and limitation of the ML methods in modeling the spatial effects and informing error sources (e.g. if the errors are due to missing co-variates or model structure). Consequently, current model comparison studies maybe one-sided. In this study, our objectives are to:
+Ensemble tree-based statistical learning methods (e.g. random forest, boosting) have been introduced in statistical air pollution modelling and have been compared in \cite{chen2019comparison,kerckhoffs2019performance,luglobal}. However, in all the studies, comparisons are only based on the cross-validation accuracy of the prediction mean, ignoring the prediction distributions for uncertainty quantification. Also not discussed is the modeling of the spatial effects and error sources analysis (i.e., if the errors are introduced by missing co-variates or the improper specification of the distribution of priors, or the model structure, e.g. using a linear model to model non-linear relationships). Moreover, the accuracy assessment in all these studies are based on random bootstrapped ground station measurements, which do not provide an error indication of the spatial areas where ground stations are not present for validation. Consequently, current model comparison studies may be one-sided. In this study, our objectives are to:
+
 \begin{enumerate}
-    \item Compare ML and Gaussian process models for the reliability of their distribution and mean predictions, and their potential in providing information for model improvement (indicating missing co-variates).
+    \item Compare machine learning and latent Gaussian models, for the reliability of the prediction intervals, and their potential in providing information for model improvement (indicating missing co-variates).
     
-    \item Propose an optimal statistical model that models the spatial random effects in stacked learning.
+    \item Evaluate stacked learning methods with and without modeling the spatial random effects.
+
+    \item Propose a framework for model comparison and spatial validation. 
+    %and an optimal statistical model for high-resolution NO$_2$ mapping.
 \end{enumerate}
 
-The first goal is achieved by comparing INLA with three ML methods: Lasso, XGBoost, and Random Forest (RF). The four methods are chosen for their dissimilarity: Lasso is a linear model without accounting for spatial dependency, which is modelled in INLA as spatial random effects. RF and XGBoost are non-linear and are not affected by dependent co-variates, with the later build tree models subsequently over the residuals of previous trees and has multiple routines to penalise model over-fittng, which has been reported in various studies to obtain the highest prediction accuracy. Among the ML methods, only the distribution prediction and interpretability from INLA and RF are compared, as INLA is representative to Gaussian process models and RF an ensemble tree model.
+The first goal is achieved by comparing GLMs with three statistical learning methods: Lasso, XGBoost, and Random Forest (RF). The four methods are chosen for their dissimilarity: Lasso is a linear model without accounting for spatial dependency, which is modelled in INLA as spatial random effects. RF and XGBoost are non-linear and are not affected by dependent co-variates, with the later build tree models subsequently over the residuals of previous trees and has multiple routines to penalise model over-fittng, which has been reported in various studies to obtain the highest prediction accuracy. Among the ML methods, only the distribution prediction and interpretability from INLA and RF are compared, as INLA is representative to Gaussian process models and RF an ensemble tree model.
 
 The second goal is achieved by using a Gaussian process to stack machine learners as a super-learner (cite), to compare the modelled spatial random effects with the super-learner that does not model the spatial random effects. 
 
@@ -78,11 +82,62 @@ The INLA is used in two models:  applying to predictor variables as other method
 \end{tabular} 
 \end{table} 
 
-\section {method}
+\section {Methods}
 
-\subsection{Models}
-\subsubsection{INLA}
-%PAULA
+\subsection{Spatial modeling}
+\subsubsection{Spatial random field}
+A spatial random field is a stochastic spatial process generally defined by $\{X(\boldsymbol{s}): \boldsymbol{s} \in D \subset \mathcal{R}^{d}\}$, where $\boldsymbol{s}$ is the location in the space (e.g. latitude-longitude pairs) for the spatial process $X(\boldsymbol{s})$ and $D$ is the spatial domain. A spatial random field is a Gaussian random field if $\{X(\boldsymbol{s}_{1}),...., X(\boldsymbol{s}_{n})\} \sim \mathcal{N}_{n}(\boldsymbol{0}, \boldsymbol{\Sigma})$, where $N_{n}$ is a Normal multivariate distribution for the spatial process and is completely specified by it's mean $\mu = \mathbb{E}(X(\boldsymbol{s}))$, and the covariance function $C(\boldsymbol{s}_{1}, \boldsymbol{s}_{2}) = \text{Cov}(X(\boldsymbol{s}_{1}), X(\boldsymbol{s}_{2}))$. The Gaussian random field can be stationary and isotropic, where the covariance function depend only on the distance and not direction between points, that is $C(\boldsymbol{s}_{1}, \boldsymbol{s}_{2}) = \text{Cov}(\|\boldsymbol{s}_{1} - \boldsymbol{s}_{2}\|)$ and it's dependence is commonly modeled by a Matérn function (\cite{stein2012interpolation}\cite{yuan2011models}). Since incorporating the spatial dependence directly with a large number of observations using a Gaussian random field is computationally expensive, \cite{rue2005gaussian} proposed the approximation of a Gaussian random field by a Gaussian Markov random field in order to do more efficient the computational process of estimation. The main property of the Gaussian Markov random field is that it uses a conditional dependency structure through the precision matrix $\boldsymbol{Q}$.
+
+
+\subsubsection{The SPDE (Stochastic partial differential equation) method}
+
+To modeling data indexed in space, \cite{lindgren2011explicit} proposed a new methodology based mainly on the approximation of the Gaussian random field with the Matérn function using the Stochastic Partial Differential Equations (SPDE) as follow:
+
+\begin{equation}\label{eqn:eq1}
+(\kappa^{2} - \Delta)^{\alpha/2}(\tau(\boldsymbol{s}) x(\boldsymbol{s})) = \boldsymbol{\mathcal{W}(s)},
+\end{equation}
+ 
+where $\kappa$ is a scale parameter, $x(\boldsymbol{s})$ is a spatial random field, $\Delta$ is the Laplacian, $\alpha$ is the parameter that controls the smoothness of the realizations, $\tau$ controls the variance and $\boldsymbol{\mathcal{W}(s)}$  is a Gaussian spatial white noise process (\cite{lindgren2015bayesian}). For the above we can use a Gaussian Markov random field that approximates to a Gaussian random field without specifying an explicit covariance structure through the SPDE method. This approximation leads to a decrease in the computational burden from $\mathcal{O}(n^{3})$ to $\mathcal{O}(n^{3/2})$. 
+
+
+\subsubsection{Bayesian inference}
+
+ The package \texttt{INLA} of the software \texttt{R} allow use the Integrated Nested Laplace Approximation (INLA) method to performs direct numerical calculation of the posterior distribution for a Bayesian hierarchical model (\cite{rue2009approximate}\cite{martino2009implementing}). If we use $\boldsymbol{x}$ as a latent Gaussian field (a Gaussian Markov random field), $\boldsymbol{\theta}$ a vector of (hyper)parameters and $\boldsymbol{y}$ a vector of observations, assuming independent observations given the vector of the spatial latent field ($\boldsymbol{x}$) and the hyperparameters ($\boldsymbol{\theta}$), the likelihood can be expressed as:
+
+\begin{equation} \label{eqn:eq2}
+p(\boldsymbol{y}\mid \boldsymbol{x},\boldsymbol{\theta}) =\prod_{i\in \mathcal{I}} p(y_i|\eta_i,\boldsymbol{\theta}),
+\end{equation}
+
+where $\eta_{i}$ is the linear predictor and $\mathcal{I}$ contains the indices for the observed values $\boldsymbol{y}$.  \\
+
+The main idea is to approximate the posterior density for the posterior of the spatial latent field and the hyperparameters, hence, the marginal densities can be obtained:
+
+\begin{equation} \label{eqn:eq3}
+p(x_i \mid \boldsymbol{y}) = \int p(x_i \mid \boldsymbol{\theta},\boldsymbol{y})  p(\boldsymbol{\theta} \mid \boldsymbol{y}) d\boldsymbol{\theta},
+\end{equation}
+and
+\begin{equation} \label{eqn:eq4}
+p(\boldsymbol{\theta}_j|\boldsymbol{y}) = \int p(\boldsymbol{\theta} \mid \boldsymbol{y})  d\boldsymbol{\theta}_{-j}.
+\end{equation}
+respectively (\cite{lindgren2015bayesian}\cite{krainski2018advanced}). \\
+
+\section{Model for the data}
+
+The general structure for a Bayesian hierarchical model in INLA is as follows:
+
+
+\begin{align}
+\boldsymbol{\theta} \hspace{2mm} \sim & \hspace{2mm} \pi(\boldsymbol{\theta}) \label{eqn:eq5}\\
+\boldsymbol{x} \mid \boldsymbol{\theta} \hspace{2mm} \sim & \hspace{2mm} \mathcal{N}(\boldsymbol{0}, \boldsymbol{Q}(\boldsymbol{\theta})^{-1}) \label{eqn:eq6}\\
+\eta_{i} \hspace{2mm} = & \hspace{2mm} \sum_{j}b_{ij}x_{j}\label{eqn:eq7}\\
+\boldsymbol{y} \mid \boldsymbol{x}, \boldsymbol{\theta} \hspace{2mm} \sim & \hspace{2mm} \prod_{i \in \mathcal{I}}p(\boldsymbol{y} \mid \boldsymbol{\eta}, \boldsymbol{\theta}) \label{eqn:eq8},
+\end{align}
+
+where $\boldsymbol{\theta}$ is the vector of hyperparameters with $\text{log}(\tau) = \theta_{1}$ and $\text{log}(\kappa) = \theta_{2}$,  $\boldsymbol{x}$ is the spatial latent field, $\boldsymbol{\eta}$ is the linear predictor with covariates $b_{ij}$ and $\boldsymbol{y}$ is the vector of the response variable $f(\cdot \mid \boldsymbol{x}, \boldsymbol{\theta})$, commonly belonging from the exponential family of distributions. 
+\vspace{0.2cm}
+
+
+
 \subsubsection{Machine learning methods}
 
 \subsubsection{Stacked learning}
@@ -305,3 +360,24 @@ there are a lot more clustered points (as the hist. peak at small prob). so the 
   \hline \\[-1.8ex] 
   \end{tabular} 
   \end{table} 
+  
+  
+  \begin{table}[!htbp] \centering 
+  \caption{} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}} ccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & LA & RF & XGB & RFLA \\ 
+\hline \\[-1.8ex] 
+RMSE & $7.54$ & $7.40$ & $7.10$ & $7.24$ \\ 
+RRMSE & $0.32$ & $0.32$ & $0.30$ & $0.31$ \\ 
+IQR & $8.42$ & $7.22$ & $6.27$ & $7.26$ \\ 
+rIQR & $0.39$ & $0.34$ & $0.29$ & $0.34$ \\ 
+MAE & $5.67$ & $5.41$ & $4.98$ & $5.26$ \\ 
+rMAE & $0.24$ & $0.23$ & $0.21$ & $0.23$ \\ 
+rsq & $0.66$ & $0.67$ & $0.70$ & $0.68$ \\ 
+explained\_var & $0.66$ & $0.67$ & $0.70$ & $0.68$ \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\end{table} 
