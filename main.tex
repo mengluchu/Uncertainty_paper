@@ -223,19 +223,22 @@ Both the distributional forest and quantile regression trees reach the coverage 
 \subsection{Interpretability} 
 The INLA coefficients
 
-SHAP variable impact for the RF and XGBoost, the variables are ranked by their variable importance. It can be observed from \cref{rfshap} and \cref{xgbshap} that the variable rankings differ but the number of points that have positive or negative impact are similar.  
+For a linear model like INLA, the best explanation model is the linear model itself but for ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep{NIPS2017_8a20a862} to interpret the ensemble tree models.
+
+SHAP values are calculated separately for RF and XGBoost methods using all the data. The variables are ranked by their variable importance, which is calculated as the sum of SHAP magnitudes over all the samples. It can be observed from \cref{rfshap} and \cref{xgbshap} that the variable rankings are similar and the number of points that have positive or negative impact are similar. Both methods ranked road\_class\_2\_100 at the top. The SHAP values also indicate a realistic pattern of the sample influence. 
+
 % do they give the same interpretation?
 \begin{figure}
 \centering
 \includegraphics[scale = 0.5]{fig/rfshap.png}
-\caption{Variable impact calculated by SHAP, the RF model. The horizontal location shows whether the effect of that value is associated with a higher or lower prediction.}
+\caption{Variable impact calculated by SHAP, the RF model. The horizontal location shows whether the effect of that value is associated with a higher or lower prediction. The ranking is based on the sum of SHAP magnitudes over all the samples.}
 \label{rfshap}
 \end{figure}
 
 \begin{figure}
 \centering
 \includegraphics[scale = 0.5]{fig/xgbshap.png}
-\caption{Variable impact calculated by SHAP, the XGBoost model. The horizontal location shows whether the effect of that value is associated with a higher or lower prediction.}
+\caption{Variable impact calculated by SHAP, the XGBoost model. The horizontal location shows whether the effect of that value is associated with a higher or lower prediction. The ranking is based on the sum of SHAP magnitudes over all the samples.}
 \label{xgbshap}
 \end{figure}
 
