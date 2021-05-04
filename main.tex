@@ -17,14 +17,15 @@
     deletekeywords={data,frame,length,as,character}
 }
 \usepackage{cleveref}
+\usepackage{amsfonts}
 
 
-\title{A comparison of INLA and machine learning-based methods in $NO_2$ modelling: prediction accuracy, uncertainty quantification, and interpretability }
+\title{A comparison of INLA and machine learning-based methods in $NO_2$ modelling: prediction accuracy, uncertainty quantification, and model interpretability }
 \begin{document}
 
 \maketitle
 \begin{abstract} 
-Ensemble tree-based statistical learning methods have been applied in NO$_2$ mapping and compared between each other and with data model methods including linear regression and Gaussian process models. However, the comparison is mainly based on prediction accuracy. In this study, we went a step further in systematically comparing between uncertainty quantification and latent space interpretability across algorithmic vs data models \citep{breiman2001statistical}. In this study, we focus on prediction intervals calculated using INLA \citep{blangiardo2015spatial} for latent Gaussian models (LGMs) and Random Forest models and their model interpretations. The findings are extensible to boosting ensemble-tree methods. Further, we compare a linear LGM, Lasso, Random Forest, and XGboost, and evaluated stack learning methods, with and without modeling spatial variations, in mapping NO$_2$ at the European country level, with several spatial validation methods. We used national ground station measurements of NO$_2$ in Germany and Netherlands, of the year 2017, and the NO$_2$ prediction grid is at 100 m by 100 m resolution.  
+Ensemble tree-based statistical learning methods have been applied in NO$_2$ mapping and compared between each other and with data model methods including linear regression and Gaussian process models. However, the comparison is mainly based on prediction accuracy. In this study, we went a step further in systematically comparing between uncertainty quantification and latent space interpretability across algorithmic vs data models \citep{breiman2001statistical}. In this study, we focus on prediction intervals calculated using INLA \citep{blangiardo2015spatial} for latent Gaussian models (LGMs) and Random Forest models and their model interpretations. The findings are extensible to boosting ensemble-tree methods. Further, we compare a linear LGM, Lasso, Random Forest, and XGBoost, and evaluated stack learning methods, with and without modeling spatial variations, in mapping NO$_2$ at the European country level, with several spatial validation methods. We used national ground station measurements of NO$_2$ in Germany and Netherlands, of the year 2017, and the NO$_2$ prediction grid is at 100 m by 100 m resolution.  
 \end{abstract}
 
 \section{Introduction}
@@ -48,45 +49,11 @@ The second goal is achieved by using a Gaussian process to stack machine learner
 \section{Data}
 We used average NO2 concentration of 2017 from ground stations in Netherlands and Germany.
 
-\subsection{Variables used in INLA modeling} 
-The INLA is used in two models:  applying to predictor variables as other methods and stacked modeling. Before applying INLA to predictor variables, we used Lasso to reduce the number of variables. The Lasso is used in contrast to ensemble tree-based methods as they are both linear models. We bootstrapped data 20 times, and used the variables that are selected more than 10 times to consider. The frequency that the Lasso selected a certain variable is shown in \cref{lassoselect}.
-
-  \begin{table}[!htbp] \centering 
-  \caption{Variables selected by Lasso, frequency indicates the number of times the variables are selected in 20 times boot-strapping. (we can only select variables that appear more than 5 times to consider).} 
-  \label{lassoselect} 
-\begin{tabular}{@{\extracolsep{5pt}} ccc} 
-\\[-1.8ex]\hline 
-\hline \\[-1.8ex] 
- & Variables & Frequency \\ 
-\hline \\[-1.8ex] 
- 1 & nightlight\_450 & $20$ \\ 
-2 & population\_1000 & $20$ \\ 
-3 & population\_3000 & $20$ \\ 
-4 & road\_class\_1\_5000 & $20$ \\ 
-5 & road\_class\_2\_100 & $20$ \\ 
-6 & road\_class\_3\_300 & $20$ \\ 
-7 & trop\_mean\_filt & $20$ \\ 
-8 & road\_class\_3\_3000 & $19$ \\ 
-9 & road\_class\_1\_100 & $18$ \\ 
-10 & road\_class\_3\_100 & $14$ \\ 
-11 & road\_class\_3\_5000 & $6$ \\ 
-12 & road\_class\_1\_300 & $5$ \\ 
-13 & road\_class\_1\_500 & $5$ \\ 
-14 & road\_class\_2\_1000 & $2$ \\ 
-15 & nightlight\_3150 & $1$ \\ 
-16 & road\_class\_2\_300 & $1$ \\ 
-17 & road\_class\_3\_1000 & $1$ \\ 
-18 & temperature\_2m\_7 & $1$ \\  
- 
-\hline \\[-1.8ex] 
-\end{tabular} 
-\end{table} 
-
 \section {Methods}
 
 \subsection{Spatial modeling}
 \subsubsection{Spatial random field}
-A spatial random field is a stochastic spatial process generally defined by $\{X(\boldsymbol{s}): \boldsymbol{s} \in D \subset \mathcal{R}^{d}\}$, where $\boldsymbol{s}$ is the location in the space (e.g. latitude-longitude pairs) for the spatial process $X(\boldsymbol{s})$ and $D$ is the spatial domain. A spatial random field is a Gaussian random field if $\{X(\boldsymbol{s}_{1}),...., X(\boldsymbol{s}_{n})\} \sim \mathcal{N}_{n}(\boldsymbol{0}, \boldsymbol{\Sigma})$, where $N_{n}$ is a Normal multivariate distribution for the spatial process and is completely specified by it's mean $\mu = \mathbb{E}(X(\boldsymbol{s}))$, and the covariance function $C(\boldsymbol{s}_{1}, \boldsymbol{s}_{2}) = \text{Cov}(X(\boldsymbol{s}_{1}), X(\boldsymbol{s}_{2}))$. The Gaussian random field can be stationary and isotropic, where the covariance function depend only on the distance and not direction between points, that is $C(\boldsymbol{s}_{1}, \boldsymbol{s}_{2}) = \text{Cov}(\|\boldsymbol{s}_{1} - \boldsymbol{s}_{2}\|)$ and it's dependence is commonly modeled by a Matérn function (\cite{stein2012interpolation}\cite{yuan2011models}). Since incorporating the spatial dependence directly with a large number of observations using a Gaussian random field is computationally expensive, \cite{rue2005gaussian} proposed the approximation of a Gaussian random field by a Gaussian Markov random field in order to do more efficient the computational process of estimation. The main property of the Gaussian Markov random field is that it uses a conditional dependency structure through the precision matrix $\boldsymbol{Q}$.
+A spatial random field is a stochastic spatial process generally defined by $\{X(\boldsymbol{s}): \boldsymbol{s} \in D \subset \mathcal{R}^{d}\}$, where $\boldsymbol{s}$ is the location in the space (e.g. latitude-longitude pairs) for the spatial process $X(\boldsymbol{s})$ and $D$ is the spatial domain. A spatial random field is a Gaussian random field if $\{X(\boldsymbol{s}_{1}),...., X(\boldsymbol{s}_{n})\} \sim \mathcal{N}_{n}(\boldsymbol{0}, \boldsymbol{\Sigma})$, where $N_{n}$ is a Normal multivariate distribution for the spatial process and is completely specified by it's mean $\mu = \mathbb{E}(X(\boldsymbol{s}))$, and the covariance function $C(\boldsymbol{s}_{1}, \boldsymbol{s}_{2}) = \text{Cov}(X(\boldsymbol{s}_{1}), X(\boldsymbol{s}_{2}))$. The Gaussian random field can be stationary and isotropic, where the covariance function depend only on the distance and not direction between points, that is $C(\boldsymbol{s}_{1}, \boldsymbol{s}_{2}) = \text{Cov}(\|\boldsymbol{s}_{1} - \boldsymbol{s}_{2}\|)$ and it's dependence is commonly modeled by a Matérn function (\cite{stein2012interpolation}\cite{yuan2011models}). Since incorporating the spatial dependence directly with a large number of observations using a Gaussian random field is computationally expensive, \cite{rue2005gaussian} proposed the approximation of a Gaussian random field by a Gaussian Markov random field for a more efficient computational process of estimation. The main property of the Gaussian Markov random field is that it uses a conditional dependency structure through the precision matrix $\boldsymbol{Q}$.
 
 
 \subsubsection{The SPDE (Stochastic partial differential equation) method}
@@ -141,17 +108,76 @@ where $\boldsymbol{\theta}$ is the vector of hyperparameters with $\text{log}(\t
 \subsubsection{Machine learning methods}
 
 \subsubsection{Stacked learning}
-Stacked learning is trained based on the cross-validation of different learners, in this case the three learners are random forest, XGBoost, and Lasso. Two super learners are compared, one is the native optimisation, and the other using the gaussian process to also model the spatial random effects. 
+Stacked learning is trained based on the cross-validation of different learners, in this case the three learners are predictions from RF, XGBoost, and Lasso models. Two super learners are compared, one is the native optimisation, and the other using the gaussian process to also model the spatial random effects. 
+
+
+\section{Modeling process}
+
+\subsection{Hyperparameter setting for XGBoost and random forest}
+\label{sec:hp}
+
+To tune XGBoost, we used grid search to optimise hyperparameters in 5-fold cross-validation basing on the minimum RMSE (Root Mean Squared Error) and additionally manual adjustment of the hyperparameters to look at the prediction patterns. The search grid for the number of iterations (nrounds) was from 200 to 3000, with a step of 200; maximum tree depth (max-depth) from 3 to 6 with a step of 1, learning rate (eta) from 0.001 to 0.1 with a step of 0.05, the penalty term gamma \citep{xgboost}  from 1 to 5 with a step of 1, the subsample is set to 0.7, L1 norm penalisation (lambda) is set to 2 and L2 norm penalisation (alpha) is set to 0.  The optimal setting for RF is min.node.size equals 5 and mtry equals 12, the number of trees is set to 1000 for random forest, which is a safe choice as the high number of trees will not negatively affect model performance. The final setting for XGB is: nround = 3000, eta = 0.007, subsample = 0.7, max-depth = 6, gamma =5, lambda =2, alpha = 0. 
+
+RF is not sensitive to hyperparameter tuning. We used the default setting of number of variables that are randomly drawn for each tree\citep{breiman2001random}, which is the integer part of the total number of variables divided by three. The number of trees is set to 1000. 
+
+
+\subsection{Variables selection for INLA} 
+
+The INLA is used in two models:  applying to predictor variables as other methods and stacked modeling. Before applying INLA to predictor variables, we used Lasso to reduce the number of variables. The Lasso is used in contrast to ensemble tree-based methods as they are both linear models. 
+Variables are selected with the L1 norm penalty that gives the model whose error is within one standard error of the minimum mean cross-validated error.
+
+We bootstrapped data 20 times, and used variables that are selected more than 10 times by the Lasso model (with hyper-parameter optimised in \cref{sec:hp}). The frequency that the Lasso selected a certain variable is shown in \cref{lassoselect}. The INLA modeling process applies the same bootstrapped samples for training and validation. 
+
+  \begin{table}[!htbp] \centering 
+  \caption{Variables selected by Lasso, frequency indicates the number of times the variables are selected in 20 times boot-strapping. We can only show variables that are selected more than 10 times and only these variables are considered in INLA.} 
+  \label{lassoselect} 
+\begin{tabular}{@{\extracolsep{5pt}} ccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & Variables & Frequency \\ 
+\hline \\[-1.8ex] 
+ 1 & nightlight\_450 & $20$ \\ 
+2 & population\_1000 & $20$ \\ 
+3 & population\_3000 & $20$ \\ 
+4 & road\_class\_1\_5000 & $20$ \\ 
+5 & road\_class\_2\_100 & $20$ \\ 
+6 & road\_class\_3\_300 & $20$ \\ 
+7 & trop\_mean\_filt & $20$ \\ 
+8 & road\_class\_3\_3000 & $19$ \\ 
+9 & road\_class\_1\_100 & $18$ \\ 
+10 & road\_class\_3\_100 & $14$ \\ 
+%11 & road\_class\_3\_5000 & $6$ \\ 
+%12 & road\_class\_1\_300 & $5$ \\ 
+%13 & road\_class\_1\_500 & $5$ \\ 
+%14 & road\_class\_2\_1000 & $2$ \\ 
+%15 & nightlight\_3150 & $1$ \\ 
+%16 & road\_class\_2\_300 & $1$ \\ 
+%17 & road\_class\_3\_1000 & $1$ \\ 
+%18 & temperature\_2m\_7 & $1$ \\  
+ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\end{table} 
+
+\subsection{INLA model parameterisation}
+
 
 \subsection {Prediction intervals}
-Prediction quantiles and coverage probability are calculated for each method for uncertainty quantification. The coverage probability is calculated as the ratio between the number of  predictions within the upper and lower quantile and the total number of predictions. The prediction quantiles for each methods are calculated as following:
+
+Prediction quantiles and coverage probability are calculated for INLA and RF (representing machine learning-based methods) for uncertainty quantification. The coverage probability is calculated as the ratio between the number of  predictions within the upper and lower quantile and the total number of predictions. The prediction quantiles for each methods are calculated as following:
 \begin{itemize}
      
 \item INLA
-%PAULA
+The prediction intervals of INLA is calculated by simulating from the response Y $\sim N(\theta, sigma^2)$.  
+
+%inputs needed from Joaquine or Paula
 
 \item Random Forest 
- The predictive quantiles of RF are calculated in two ways, one is uses all the observations in each terminal node and over all the trees as a predicted distribution for each terminal node, known as quantile regression forest \citep{meinshausen2006quantile}. The second method embeds the GAMLSS \citep{stasinopoulos2007generalized} into random forest, known as distributional forests \citep{schlosser2019distributional}, which for each tree uses standard maximum likelihood to fit distributions and recursively select and split co-variates according to the instability of the gradient of the likelihood at each observation along each co-variate. For interpretability, we compared the impact of a certain co-variate on model predictions, by analysing the coefficients estimated by INLA and Lasso and the tree SHAP \citep[SHapley Additive exPlanations,][]{lundberg2018explainable} estimated by RF and XGBoost.  
+ The predictive quantiles of RF are calculated in two ways, one is uses all the observations in each terminal node and over all the trees as a predicted distribution for each terminal node, known as quantile regression forest \citep{meinshausen2006quantile}. The second method embeds the GAMLSS \citep{stasinopoulos2007generalized} into RF, known as distributional forests \citep{schlosser2019distributional}, which for each tree uses standard maximum likelihood to fit distributions and recursively select and split co-variates according to the instability of the gradient of the likelihood at each observation along each co-variate. 
+ 
+\subsection{Model interpretation}
+For a linear model like INLA, the best explanation model is the linear model itself but for ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep[SHapley Additive exPlanations,][]{lundberg2018explainable,NIPS2017_8a20a862}, a unified method based on additive feature-attribution, to estimate variable influence in respectively the RF and XGBoost models.   
+%For a linear model like INLA, the best explanation model is the linear model itself but for ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep{NIPS2017_8a20a862} to interpret the ensemble tree models.
 
 \subsection{Spatial validation}
 Besides 20-times random bootstrapping, We also used four other spatial validation methods to comprehensively evaluate the models at different angles.
@@ -220,8 +246,8 @@ Both the distributional forest and quantile regression trees reach the coverage 
 \label{distvsquant}
 \end{figure}
 
-\subsection{Interpretability} 
-The INLA coefficients
+\subsection{Model Interpretation} 
+
 
 For a linear model like INLA, the best explanation model is the linear model itself but for ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep{NIPS2017_8a20a862} to interpret the ensemble tree models.
 
