@@ -2,7 +2,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{hyperref}
 
-\author{Meng Lu, Paula Moraga, Joaquin Cavieres }
+\author{Meng Lu, Joaquin Cavieres, Paula Moraga }
 \date{September 2020}
 \usepackage{amsmath}
 \usepackage{natbib}
@@ -29,7 +29,7 @@ Ensemble tree-based statistical learning methods have been applied in NO$_2$ map
 \end{abstract}
 
 \section{Introduction}
-Ensemble tree-based statistical learning methods (e.g. random forest, boosting) have been introduced in statistical air pollution modelling and have been compared in \cite{chen2019comparison,kerckhoffs2019performance,luglobal}. However, in all the studies, comparisons are only based on the cross-validation accuracy of the prediction mean, ignoring the prediction distributions for uncertainty quantification. Also not discussed is the modeling of the spatial effects and error sources analysis (i.e., if the errors are introduced by missing co-variates or the improper specification of the distribution of priors, or the model structure, e.g. using a linear model to model non-linear relationships). Moreover, the accuracy assessment in all these studies are based on random bootstrapped ground station measurements, which do not provide an error indication of the spatial areas where ground stations are not present for validation. Consequently, current model comparison studies may be one-sided. In this study, our objectives are to:
+Ensemble tree-based statistical learning methods (e.g. random forest, boosting) have been introduced in statistical air pollution modelling and have been compared in \cite{chen2019comparison,kerckhoffs2019performance,luglobal}. However, in all the studies, comparisons are only based on the cross-validation accuracy of the prediction mean, ignoring the prediction distributions for uncertainty quantification. Also not discussed is the modeling of the spatial effects and error sources analysis (i.e., if the errors are introduced by missing co-variants or the improper specification of the distribution of priors, or the model structure, e.g. using a linear model to model non-linear relationships). Moreover, the accuracy assessment in all these studies are based on random bootstrapped ground station measurements, which do not provide an error indication of the spatial areas where ground stations are not present for validation. Consequently, current model comparison studies may be one-sided. In this study, our objectives are to:
 
 \begin{enumerate}
     \item Compare machine learning and latent Gaussian models, for the reliability of the prediction intervals, and their potential in providing information for model improvement (indicating missing co-variates).
@@ -69,7 +69,7 @@ where $\kappa$ is a scale parameter, $x(\boldsymbol{s})$ is a spatial random fie
 
 \subsubsection{Bayesian inference}
 
- The package \texttt{INLA} of the software \texttt{R} allow use the Integrated Nested Laplace Approximation (INLA) method to performs direct numerical calculation of the posterior distribution for a Bayesian hierarchical model (\cite{rue2009approximate}\cite{martino2009implementing}). If we use $\boldsymbol{x}$ as a latent Gaussian field (a Gaussian Markov random field), $\boldsymbol{\theta}$ a vector of (hyper)parameters and $\boldsymbol{y}$ a vector of observations, assuming independent observations given the vector of the spatial latent field ($\boldsymbol{x}$) and the hyperparameters ($\boldsymbol{\theta}$), the likelihood can be expressed as:
+ The \texttt{R} package \texttt{INLA} facilitates the application of the Integrated Nested Laplace Approximation (INLA) method to performs direct numerical calculation of the posterior distribution for a Bayesian hierarchical model (\cite{rue2009approximate}\cite{martino2009implementing}). If we use $\boldsymbol{x}$ as a latent Gaussian field (a Gaussian Markov random field), $\boldsymbol{\theta}$ a vector of (hyper)parameters and $\boldsymbol{y}$ a vector of observations, assuming independent observations given the vector of the spatial latent field ($\boldsymbol{x}$) and the hyperparameters ($\boldsymbol{\theta}$), the likelihood can be expressed as:
 
 \begin{equation} \label{eqn:eq2}
 p(\boldsymbol{y}\mid \boldsymbol{x},\boldsymbol{\theta}) =\prod_{i\in \mathcal{I}} p(y_i|\eta_i,\boldsymbol{\theta}),
