@@ -47,7 +47,7 @@ Geostatistical models (e.g. Kriging) and Geographically weighted regression (GWR
 %Machine learning methods commonly have a high predictive power but lower inference capability compared to a geostatistics methods. 
 
 
-As spatial models are typically more complex compared to their non-spatial counter-parts, several studies compared spatial and non-spatial models to understand if the spatial effects could be simply modelled by including covariates in LUR models. \cite{young2016satellite} studied the use of universal Kriging (UK), OMI satellite instrument \citep{OMI} and LUR models for NO$_2$ prediction at 2.5 km resolution. \cite{young2016satellite} indicated that either using UK or adding OMI in the LUR model improves an LUR model but adding OMI in a UK model only trivially improves the performance. \cite{BERTAZZON20159} shows that the inclusion of the meteorological variables accounts spatial effects similarly as the use of spatial autoregressive models. However, even if the spatial dependency can be captured by involving certain covariates in a LUR model, we may still need geostatistical methods to understand the spatial structure present in the data. It can be viewed as consisting two components: a mean function capturing the relationship between independent variables and the response, and a covariance function modeling dependency of residuals from the mean \citep{stackinla}. Linear models have been used for the mean function; however, the relationships between NO$_2$ and predictors have been shown to be better modeled with non-linear machine learning methods \citep{luglobal}. Most recent studies attempt to replace the linear mean function with machine learning models. \cite{liu2020integrate} applies Gaussian process regression to the residuals from a random forest model, for the spatial prediction of PM2.5. In disease mapping. \cite{stackinla} proposes to stack machine learning models to replace the mean function in a GP model.   
+As spatial models are typically more complex compared to their non-spatial counter-parts, several studies compared spatial and non-spatial models to understand if the spatial effects could be simply modelled by including covariates in LUR models. \cite{young2016satellite} studied the use of universal Kriging (UK), OMI satellite instrument \citep{OMI} and LUR models for NO$_2$ prediction at 2.5 km resolution. \cite{young2016satellite} indicated that either using UK or adding OMI in the LUR model improves an LUR model but adding OMI in a UK model only trivially improves the performance. \cite{BERTAZZON20159} shows that the inclusion of the meteorological variables accounts spatial effects similarly as the use of spatial autoregressive models. However, even if the spatial dependency can be captured by involving certain covariates in a LUR model, we may still need geostatistical methods to understand the spatial structure present in the data. It can be viewed as consisting two components: a mean function capturing the relationship between independent variables and the response, and a covariance function modeling dependency of residuals from the mean \citep{stackinla}. Linear models have been used for the mean function; however, the relationships between NO$_2$ and predictors have been shown to be better modeled with non-linear machine learning methods \citep{luglobal}. Most recent studies attempt to replace the linear mean function with machine learning models. \cite{liu2020integrate} applies Gaussian process regression to the residuals from a random forest model, for the spatial prediction of PM$_2.5$. In disease mapping. \cite{stackinla} proposes to stack machine learning models to replace the mean function in a GP model.   
 
 Few studies have compared between geostatistical and machine learning methods, possibly because the machine learning methods are still relatively new in air pollution mapping. It might be more interesting to compare between geostatistical methods and machine learning methods than geostatistical methods and LUR, because machine learning methods may be more flexibly in (implicitly) capturing spatial dependency by integrating covariates, when the number of observations is sufficient. Moreover, most comparison studies only compare the cross-validation accuracy of the prediction mean (e.g. using R-squared, mean absolute error, or root mean squared error), ignoring the prediction intervals. Also not discussed is the cause of the prediction errors, are they caused by missing co-variants, violation of the model assumptions (e.g. data distribution, non-linearity), or inconsistent distributions between training and validation sets? Also, different cross-validation strategies, e.g., how do we split the train-test sets, may lead to different model validation results. Current studies typically only use k-fold splitting \citep{kerckhoffs2019performance,larkin2017global,REN2020105827} or bootstrapping \citep{luglobal} to randomly splitting between train-test sets, which may be one-sided and does not provide an indication of accuracy in spatial blocks (but only at the point measurements). In this study, we focus on ensemble tree-based methods in the machine learning category and a hierarchical spatial model \citep{lindgren2011explicit} called latent Gaussian model in the geostatistics category. Additionally, we invest in stacked models in integrating machine learning and geostatistical models and develop a LUR model using Lasso for comparison.  
 Ensemble trees are "nonparametric" models, deriving prediction intervals is therefore less straight-forward but can be achieved \citep{meinshausen2006quantile,wager2014confidence,stasinopoulos2007generalized,velthoen2021gradient}. One of the likely most widely recognisable method is Quantile Random Forest (QRF) \citep{meinshausen2006quantile}. QRF has been shown to estimate middle quantiles well but may fall short at the extremes due to the limited number of observations in the tail regions \citep{velthoen2021gradient}. \cite{velthoen2021gradient} proposed to use extreme quantile regression to estimate for data outside the range of observations. Another method is distributional regression forests (DF) \citep{schlosser2019distributional}, which embeds the GAMLSS \citep{stasinopoulos2007generalized} into RF.  
@@ -74,8 +74,15 @@ The gaussian latent model is implemented using INLA (Integrated Nested Laplace A
  
  
 \section{Data}
-NO$_2$ concentration measurements of 2017 from national ground stations of Germany and the Netherlands are used. The original hourly data is downloaded from EEA \citep{EEA}. Negative values are considered as missing. The data is aggregated to annual concentrations by taking the mean and omitting missing values.
+NO$_2$ concentration measurements of 2017 from national ground stations of Germany and the Netherlands are used. The original hourly data is downloaded from EEA \citep{EEA}. Negative values are considered as missing. The data is aggregated to annual concentrations by taking the mean and omitting missing values. The spatial distribution of NO2 stations, histogram and Q-Q plot for normality are shown in \cref{fig:histqq}. %The urban type, "rural", "suburban", and "urban" are defined respectively by the population  < 300,  301 - 1500, and > 1500, within 1 km$^2$ \citep{urbantype}. 
+A gamma distribution test is conducted using the method proposed in \cite{villasenor2015variance} and implemented in \cite{goft}.  The test result (p-value = 0.32) implies that the data distribution is not significantly different from gamma distribution. We also conducted a Shapiro test for normality, with the result implying the distribution of data being significant different from normal distribution (p-value= 8.605e-12).
 
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.06]{fig/histqq_NO2.png}
+    \caption{Spatial distribution of NO2 stations, histogram and Q-Q plot of the NO2 measurements.}
+    \label{fig:histqq}
+\end{figure}{}
 The geospatial predictor grids (\cref{tab:prevar}) are calculated or re-sampled at 100 m resolution. They are either spatial attributes aggregated within a circular ring centred at each sensor or prediction location, called buffered predictors, or values of the spatial attribute at the observation or prediction location, called gridded variables. The buffered predictors include industry areas, roads, VIIRS (Visible Infrared Imaging Radiometer Suite) Nighttime Day/Night Band (DNB) radiance values \citep[nightlight,][]{nightlight} and population. Variables that are originally grids include wind speed and temperature \citep{dee2011era}, elevation \citep{amante2009etopo1}, monthly TROPOMI level 3 product of NO$_2$ column density  \citep{TROPOMIgee} from 2019 (due to the increased resolution compared to 2018). The buffered predictors of road and industry are calculated from OpenStreetMap  \citep{openstreetmap}. For detailed descriptions of the processing of the geospatial predictors please refer to \cite{luglobal}.   
  %OMI level 3 product of the 2017 annually aggregated NO$_2$ vertical column density, and the GEOS-CHEM \citep{bey2001global,GEOS-CHEM} annual NO$_2$ surface concentration product \citep{geddes2016long} of 2013. 
 
@@ -192,18 +199,15 @@ where $\boldsymbol{\theta}$ is the vector of hyperparameters with $\text{log}(\t
 \subsection{Stacked Ensemble in a geostatistical model}
 Extending from the non-spatial SE, a latent Gaussian model is used to stack the same base-learners but at the same time models the spatial random effects. Again, INLA is used to to implement and estimate the latent Gaussian model, with the same specification (i.e. mesh structure, likelihood, objective function, priors, optimisation process) as the INLA model described above. 
 
- 
-
 \section{Modeling process}
  
 Models below are considered in this study. 
 \begin{enumerate}
-    
 \item "INLA": a Gaussian latent model fit using INLA %assuming a Gaussian prior for NO$_2$ measurements \textcolor{red}{Model assumes priors for the different parameters. Do you mean assuming Gaussian distribution for NO$_2$ measurements?};
-\item "LA": Lasso; 
-\item "RF": Random Forest; 
-\item "XGB": XGBoost assuming a Gaussian loss; 
-\item "XGB-G": XGBoost assuming a gamma loss; 
+\item "LA": Lasso regression; 
+\item "RF": Random forest; 
+\item "XGB": XGBoost assuming a Gaussian objective function; 
+\item "XGB-G": XGBoost assuming a Gamma objective function; 
 \item "RFLA": RF in post-processing using Lasso \citep{hastie2009elements}, the QRF is implemented for RFLA; 
 \item "SE": stacked learning of Lasso, RF, XGBoost models; 
 \item "SE-INLA": stacked learning of Lasso, RF, XGBoost models using INLA;
@@ -211,7 +215,7 @@ Models below are considered in this study.
 \item "DF": distributional regression forest \citep{schlosser2019distributional}.
 \end{enumerate}
 
-The QRF and DF are not included in prediction accuracy comparison as the results are very similar to RF. They are mainly used for uncertainty assessments are compared with INLA. Model interpretation is compared between XGBoost, RF, and INLA. 
+The QRF and DF are not included in prediction accuracy comparison as the results are very similar to RF. Their prediction intervals are compared. 
 
 \subsection{Hyperparameter setting for XGBoost and random forest}
 \label{sec:hp}
@@ -264,36 +268,22 @@ Two INLA models are developed, one with Gaussian likelihood and the other with G
 
 \section{Model evaluation}
 
-\subsection {Prediction intervals}
-
-CRPS (Continuous Ranked Probability Score) implemented in R package {\tt ScoringRules} \citep{jordan2017evaluating} is used to evaluate the probability distribution predicted in INLA and QRF (representing machine learning-based methods) for uncertainty quantification. For the INLA model, The prediction intervals of INLA is calculated by simulating from the response Y $\sim N(\theta, sigma^2)$. 
- 
-%The coverage probability is calculated as the ratio between the number of  predictions within the upper and lower quantile and the total number of predictions. 
- 
-
-%inputs needed from Joaquine or Paula
-
- 
-\subsection{Model interpretation}
-For a linear model like INLA, the best explanation model is the linear model itself but for ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep[SHapley Additive exPlanations,][]{lundberg2018explainable,NIPS2017_8a20a862}, a unified method based on additive feature-attribution, to estimate variable influence in respectively the RF and XGBoost models.   
-%For a linear model like INLA, the best explanation model is the linear model itself but for ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep{NIPS2017_8a20a862} to interpret the ensemble tree models.
-
 \subsection{Cross validation}
-
 When the same dataset is used (i.e., using all the NO2 observations of the study area) for all the models, we use MSE (root mean squared error), MAE (mean absolute value), IQR (interquartile range) and R$^2$ (R-squared) to compare model performance.   
 RMSE is calculated as the square root of the differences between predictions and observations; MAE the absolute differences between predictions and observations; IQR the differences between the third and first quartiles of the prediction. R$^2$ indicates the explained variance and is calculated as $R^2 = 1- var(error) / var(y)$, where var(.) indicates variance, error indicates model residuals and y indicates observed response values. When different data is used in different models (e.g. separating between close and far-away from roads), we additionally calculated the RRMSE (relative RMSE), RMAE (relative MAE), rIQR (relative IQR) to account for the differences in the magnitudes of response values. The RRMSE and RMAE are calculated respectively by dividing the RMSE and MAE by the mean of observations. The rIQR was calculated by dividing the IQR by the median of observations.  
 
-We designed and implemented 3 CV methods. The first one is non-spatial, basing on 20-times random bootstrapped splitting of training and test sets \citep{luglobal}. The others are spatial CV methods for evaluating model performance also in spatial blocks. 
-
-
+We designed and implemented three CV methods. 
 \begin{enumerate}
+\item  20-times random bootstrapped splitting of training and test sets \citep{luglobal}.  
+
+
  %   \item Probability sampling: higher probability is given to select observations that are isolated, to test how good the model is at predicting air pollution over the whole region. This is because with random sampling we would get more points in areas where observations are clustered and may not pick any observation in areas with few observations.   
-    \item Spatial blocked CV. Dividing the data into spatial blocks, each time use one block for validation and other blocks for training. 
+\item Spatial blocked CV. Dividing the data into spatial blocks, each time use one block for validation and other blocks for training. 
     
-    \item Predictor-based CV. The study areas are divided basing on classified predictor values. In this study, three subareas are defined:  1) close to traffic and high population:  
-    2) close to traffic and middle low population. 3) far away from traffic. 
+\item Customised train-test splitting based on values of certain covariates, in this study, three subareas are defined,  1) close to traffic and high population,  
+    2) close to traffic and middle low population, 3) far away from traffic. 
     
-    High population is defined as the variable population of 1000 m buffer that is in the last quartile. Low population is defined as the variable population of 1000 m buffer is below the median. Close to road is defined as: 
+    High population is defined as the variable population of 1000 m buffer that is in the last quartile. Low population is defined as the variable population of 1000 m buffer is below the median. Close to road is defined as (please refer to \cref{tab:prevar} for the definition of covariates): 
     \begin{lstlisting} 
     road_class_2_100 > 0 | 
     road_class_1_100 > 0 |
@@ -311,30 +301,45 @@ We designed and implemented 3 CV methods. The first one is non-spatial, basing o
     %\item Validation based on known attribute: we know the air quality station types (traffic, background, industrial) and human settlement types (urban or rural), this allows us to quantify prediction accuracy for each type of air quality stations and separating between urban and rural areas. 
 \end{enumerate}
 
+\subsection {Prediction intervals}
+The CRPS (Continuous Ranked Probability Score) is an uncertain measure that assesses the similarities between two distributions. We use it to indicates how the predicted distribution matches with the observed distribution. The CRPS implemented in R package {\tt ScoringRules} \citep{jordan2017evaluating} is used. CRPS is calculated for the INLA and QRF (representing machine learning-based methods). For the INLA model, The prediction intervals of INLA is calculated by simulating from the response Y $\sim N(\theta, sigma^2)$. 
+ 
+%The coverage probability is calculated as the ratio between the number of  predictions within the upper and lower quantile and the total number of predictions. 
+ 
+
+%inputs needed from Joaquine or Paula
+
+ 
+\subsection{Model interpretation}
+%Model interpretation is compared between INLA (linear model), RF and XGBoost, as they represent linear regression, bagging and boosting. 
+We inspect fixed and spatial random effects modelled by INLA and compare the spatial random field with modelled prediction intervals and model residuals to understand the contribution of spatial random effects. For ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep[SHapley Additive exPlanations,][]{lundberg2018explainable,NIPS2017_8a20a862}, a unified method based on additive feature attribution, to estimate variable influence in respectively the RF and XGBoost models.   
+%For a linear model like INLA, the best explanation model is the linear model itself but for ensembling methods it is harder to interpret the models \citep{NIPS2017_8a20a862}. We use SHAP \citep{NIPS2017_8a20a862} to interpret the ensemble tree models.
+
+
 %\item XGboost
 %Quantile regression is used to calculate the prediction quantiles of XGBoost, based on \cite{quantile} 
 
 %\item Lasso
 
 
-\section{Results}
+\section{Result and discussion}
 \subsection{Accuracy assessment and uncertainty quantification}
 
 \textbf{Non-spatial cross validation }
- Among individual methods, INLA with Gaussian likelihood obtained the highest prediction accuracy, followed by XGB with a Gaussian loss. RF with Lasso optimisation greatly improves from original RF. It is interesting to see, however, despite the distribution of response being closer to Gamma distribution compared to a Gaussian distribution, using a Gamma loss in XGB and specifying a Gamma likelihood both decrease the prediction accuracy considerably. 
+Both ensemble tree-based methods and INLA with Gaussian objective or likehood obtain higher prediction accuracy than Lasso, indicating the improvements can be achieved by using a more flexible model and modeling spatial random fields. Among individual methods, in terms of R$^2$ and RMSE, INLA with Gaussian likelihood obtained the highest prediction accuracy, followed by XGB-G and RFLA. RFLA greatly improves from original RF. Despite the distribution of response being closer to Gamma distribution compared to Gaussian distribution, using Gamma regression in XGB and specifying Gamma likelihood in INLA both decrease the prediction accuracy considerably. Compared to INLA, XGB obtained lower MAE and IQR but still lower RMSE and R$^2$, this indicates the XGB predict less well at more extreme values. 
  
- INLA stacked ensembling further improves prediction accuracy compared to stacked ensembling. This indicates the spatial structures could further improve prediction accuracy despite flexible relationships captured from machine learning models.
+ SE-INLA improves prediction accuracy compared to SE and INLA, obtained the lowest RMSE and the highest R$^2$ among all the models. This indicates the spatial structures could further improve prediction accuracy despite flexible relationships captured from machine learning models.
  
 \begin{table}[!htbp] \centering 
-  \caption{Prediction accuracy matrix for different models using 20 times bootstrapped cross-validation. LA: Lasso; RF: random forest, XGB: XGBoost using the default gaussian loss; XGB-G: XGBoost using a gamma loss; RFLA: random forest with lasso for schrinkage aggregation of regression trees. INLA: Latent gaussian model using INLA, assuming a gaussian likelihood. } 
+  \caption{Prediction accuracy matrix for different models using 20 times bootstrapped cross-validation. LA: Lasso; RF: random forest, XGB: XGBoost using the default gaussian loss; XGB-G: XGBoost using a gamma loss; RFLA: random forest with lasso for schrinkage aggregation of regression trees. INLA: Latent Gaussian model implemented using INLA, assuming a Gaussian likelihood.} 
   \label{} 
 \begin{tabular}{@{\extracolsep{5pt}} cccccccccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
-         & LA & RF & XGB & XGB-G & RFLA & INLA& INLA-G &SE& SE-INLA\\ 
+         & LA  & RF   & XGB     & XGB-G & RFLA   & INLA  &INLA-G &SE& SE-INLA\\ 
 \hline \\[-1.8ex] 
 RMSE & $7.54$ & $7.45$ &$7.14$ & $8.91$ & $7.23$ & $7.06$ & 9.21 &7.18 & $6.83$\\ 
-IQR & $8.47$ & $7.39$ & $6.54$ & $9.21$ & $7.27$ & $7.1$ & 7.4 &7.30& $6.8$\\ 
+IQR & $8.47$ & $7.39$ & $6.54$ & $9.21$ & $7.27$ & $7.1$ & 7.4  &7.30& $6.8$\\ 
 MAE & $5.69$ & $5.51$ & $5.05$ & $6.27$ & $5.28$ & $5.3$ & 6.2  &5.31& $5.0$\\ 
  
 R$^2$ & $0.65$ & $0.65$ & $0.68$ & $0.51$ & $0.67$ & $0.69$ &  0.45& 0.69& $0.71$\\ 
@@ -343,14 +348,11 @@ R$^2$ & $0.65$ & $0.65$ & $0.68$ & $0.51$ & $0.67$ & $0.69$ &  0.45& 0.69& $0.71
 \end{table} 
 
 \textbf{Spatial blocked cross validation }
-The spatially blocked CRPS values indicates 
-
-
 
 \begin{figure}
     \centering
     \includegraphics[scale=0.4]{fig/r2spcv.png}
-    \caption{The R-squared of each block, using the rest of the blocks for training. From left to right, the models used are a) XGBoost, b)Random Forest, c)INLA. 
+    \caption{The R-squared of each block, using the rest of the blocks for training. From left to right, the models used are a) XGBoost, b) Random Forest, c) INLA. 
 }
     \label{fig:r2}
 \end{figure}
