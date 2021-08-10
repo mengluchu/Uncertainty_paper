@@ -208,11 +208,13 @@ Models below are considered in this study.
 \item "RF": Random forest; 
 \item "XGB": XGBoost assuming a Gaussian objective function; 
 \item "XGB-G": XGBoost assuming a Gamma objective function; 
-\item "RFLA": RF in post-processing using Lasso \citep{hastie2009elements}, the QRF is implemented for RFLA; 
+\item "RFLA": Using Lasso to aggregate RF trees \citep{hastie2009elements}, the QRF is implemented for RFLA; 
 \item "SE": stacked learning of Lasso, RF, XGBoost models; 
 \item "SE-INLA": stacked learning of Lasso, RF, XGBoost models using INLA;
 \item "QRF": quantile regression forest \citep{meinshausen2006quantile};
+\item "QRFLA": Applying the Lasso tree-aggregation strategy in RFLA to QRF. 
 \item "DF": distributional regression forest \citep{schlosser2019distributional}.
+
 \end{enumerate}
 
 The QRF and DF are not included in prediction accuracy comparison as the results are very similar to RF. Their prediction intervals are compared. 
@@ -297,13 +299,8 @@ We designed three CV methods.
 This yields 85, 65, and 177 samples in each category. This ensures a balanced number of samples between close to traffic and far-away from traffic. Each time, 30 samples (7\% of the entire dataset) are drawn from the corresponding category for CV. For example, each time, 30 samples are drawn from the 85 samples as the test set to obtain the prediction accuracy CV for the situation "tr-hp" and the rest is used for training.  
 
 \subsection {Prediction intervals}
-The CRPS (Continuous Ranked Probability Score) is an uncertain measure that assesses the similarities between two distributions.  We use it to indicates how the predicted distribution matches with the observed distribution. The CRPS implemented as an R package {\tt ScoringRules} \citep{jordan2017evaluating} is used. CRPS is calculated for the INLA and QRF (which represents ML-based methods). For the INLA model, The prediction intervals of INLA is calculated by simulating from the response Y $\sim N(\theta, sigma^2)$. The mean of CRPS for all the points within each test block is calculated in spatial-blocked CV.
+CRPS (Continuous Ranked Probability Score) and coverage probability are used as quality indicators of prediction intervals. CRPS is an uncertain measure that assesses the similarities between two distributions.  We use it to indicates how the predicted distribution matches with the observed distribution. The CRPS implemented as an R package {\tt ScoringRules} \citep{jordan2017evaluating} is used. CRPS is calculated for the INLA and QRF (which represents ML-based methods). For the INLA model, The prediction intervals of INLA is calculated by simulating from the response Y $\sim N(\theta, sigma^2)$. The mean of CRPS for all the points within each test block is calculated in spatial-blocked CV. Coverage probability is calculated as the ratio between the number of predictions within the upper and lower quantile and the total number of predictions (in the test set). The prediction intervals are mainly compared between INLA, INLA-G, QRF and DF. The prediction interval for QRFLA is compared with QRF to investigate the effects of Lasso tree-aggregation strategy on the prediction intervals.
  
-%The coverage probability is calculated as the ratio between the number of  predictions within the upper and lower quantile and the total number of predictions. 
- 
-
-%inputs needed from Joaquine or Paula
-
  
 \subsection{Model interpretation}
 %Model interpretation is compared between INLA (linear model), RF and XGBoost, as they represent linear regression, bagging and boosting. 
@@ -401,16 +398,36 @@ INLA\_far & $4.0$ & $0.3$ & $4.3$ & $0.3$ & $3.2$ & $0.2$ & $0.65$
 \end{tabular} 
 \end{table} 
 
+
+
+
 \subsection{Prediction interval}
+
+The 90\% prediction intervals for INLA, INLA-G, DF, QRF and QRFLA are shown \cref{distvsquant,inlapred,qrfrla}. The random forest-based methods, namely DF, QRF and QRFLA reach the coverage probability higher than 0.9, but the DF predict a more realistic prediction quantile, notably, it covers four observations that are not covered by the prediction quantile predicted by the quantile regression forest. The INLA 90\% prediction interval is too narrow. The coverage probability is 0.41 for INLA and 0.36 for INLA-G. The predicted 90th quantile of the INLA-G turned to better capture extreme high values but the model also turned to miss more at lower values. The QRFLA predicted slightly narrower prediction interval compared to QRF. This result is consistent to the variance reduction effects of using INLA to reduce the number of trees in an RF model. 
+
 \label{sec:predinterval}
 \begin{figure}
 \centering
-\includegraphics[scale = 0.2]{fig/dist_vs_qrf.png}
-\caption{The 90\% prediction interval predicted by distributional forest and quantile regression trees. The black dots indicate observations in the test dataset.}
+\includegraphics[scale = 0.2]{fig/qrf_df.png}
+\caption{The 90\% prediction interval predicted by DF and QRF. The black dots indicate observations in the test dataset.}
 \label{distvsquant}
 \end{figure}
 
-Both the distributional forest and quantile regression trees reach the coverage probability higher than 0.9, but the distributional forest predict a more realistic prediction quantile, notably, it covers four observations that are not covered by the prediction quantile predicted by the quantile regression forest. 
+\begin{figure}
+\centering
+\includegraphics[scale = 0.2]{fig/INLA_pred.png}
+
+\caption{The 90\% prediction interval predicted by INLA and INLA-G. The black dots indicate observations in the test dataset.}
+\label{inlapred}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[scale = 0.2]{fig/qrf_qrfla.png}
+\caption{The 90\% prediction interval predicted by QRF and QRFLA. The black dots indicate observations in the test dataset.}
+\label{qrfrfla}
+\end{figure}
+
 
 \subsection{Model Interpretation} 
 %For a linear model the best explanation model is the linear model itself but it is harder to interpret ensembling models \citep{NIPS2017_8a20a862}, which we used SHAP \citep{NIPS2017_8a20a862}.
@@ -432,11 +449,13 @@ SHAP values are calculated for RF and XGB methods using all the data. The variab
 \label{xgbshap}
 \end{figure}
 
-The spatial random field estimated by the INLA model is shown in \cref{randomfield}. Patches of high values are shown 
+The mean of spatial random field estimated by the INLA model is shown in \cref{randomfield}. The highest values are shown close to Stuttgart region. Northern, southern and western show in general high values. Compared to \cref{INLApred,difINLA}, the areas close to the Stuttgart region where the mean values of the spatial random field is high corresponds to both high NO2 observations and highest differences between observations and prediction.  
+The INLA model without modeling the spatial random effect obtained lower DIC (Information Criterion) 3286.66 vs. 3251.97 (with spatial effects) and WAIC (Watanabe-Akaike information criterion) 3291.75 vs 3253.93 (with spatial effects). These also suggest the advantage of modelling the spatial effects.
+
 \begin{figure}
 \centering
 \includegraphics[scale = 0.5]{fig/mean_randomfield.png}
-\caption{Mean random field fit by the INLA model.}
+\caption{Mean of the spatial random field fitted by the INLA model.}
 \label{randomfield}
 \end{figure}
 
@@ -444,7 +463,7 @@ The spatial random field estimated by the INLA model is shown in \cref{randomfie
 \begin{figure}
 \centering
 \includegraphics[scale = 0.05]{fig/pred_11var.png}
-\caption{INLA predicted NO2 at the ground stations and the observed NO2. }
+\caption{INLA predicted NO2 at the ground stations with mean, high (0.975) and low (0.925) quantiles and the observed NO2.}
 \label{INLApred}
 \end{figure}
 
@@ -456,21 +475,24 @@ The spatial random field estimated by the INLA model is shown in \cref{randomfie
 \end{figure}
 
 \section{Discussion}
-In this study, we compared geostatistical methods with ML methods in spatial NO2 prediction. The comparison consists of the predicted mean, prediction intervals, and model interpretation. The models are evaluated with different CV strategies. We propose the same model evaluation strategies to be incorporated in all the model comparison studies. 
+In this study, we compared geostatistical methods with ML methods for spatial NO2 prediction in Germany and the Netherlands. The comparison consisting of the predicted mean, prediction intervals, and model interpretation. Spatial and non-spatial CV strategies are used to reveal prediction accuracy at different levels. %We propose the same model evaluation strategies to be incorporated in all the model comparison studies. 
 
-To better predict at boundaries, we experienced with different and large-enough mesh, but this did not improve the performance.
-The INLA model without modeling the spatial random effect obtained lower DIC (Information Criterion) 3286.66 vs. 3251.97 (with spatial effects) and WAIC (Watanabe-Akaike information criterion) 3291.75 vs 3253.93 (with spatial effects).  
 
 Different from non-parametric models such as ensemble trees, a parametric model such as the INLA model developed in our study requires feature selection and the assumption of the distribution of the response. Several studies used the whole dataset for variable selection and then use selected variables for CV \citep{lu2020land,larkin2017global}. This may however lead to information leak as the validation data is also used in CV. To avoid this problem, one can include the variable selection process in each CV (i.e. use the same training data for variable selection and test). However, variable selection in each run added in additional error and uncertainty, therefore, a determined set of covariates may be preferred. We obtain fixed set of selected variables while reduce information leakage to a negligible level by choosing only the variables that are selected 90\% -100\% times of all the bootstraps of Lasso.
 
 
-Deviation from assumed distribution is a common cause of narrow prediction intervals but in our case, assuming a Gamma distribution does not improve model prediction.     
+Several venues were attempted to further improve the INLA model. Firstly, as we observed in general worse results at boundaries (\cref{fig:r2,crps}), we inspected if different meshes with edge-effects fully accounted (e.g. the mesh is sufficiently large for observations at the edge) could improve the prediction accuracy. It turned out that the same performance is obtained. Secondly, we suspect that the deviation from assumed distribution (Gaussian) is the cause of narrow prediction intervals of the INLA model. However, assuming a Gamma distribution likelihood did not improve the model performance (in terms of the accuracy matrix, CRPS and coverage probability). We also experienced with the log-normal likelihood but that also decreases the model performance. Thirdly, we additionally added two factor variables, namely "country" (country code, "1" for Germany and "2" for the Netherlands) and "urban types" (rural, urban, city centre according to \citep{urbantype}). However, that also does not increase the model performance. As future works, using a different spatial model (e.g. by specifying different hyperparameters), using the country and urban types as mixed-effects, and modelling spatial varying coefficients may improve the modelling results. Major improvement may also rely on more observations and better geospatial predictors (e.g. traffic count, urban morphological matrix). 
 
-If the prediction interval can be calculated, we can also visualise the uncertainty with the length of a certain quantile of prediction intervals \citep{shaddick2015spatio}.   
+%If the prediction interval can be calculated, we can also visualise the uncertainty with the length of a certain quantile of prediction intervals \citep{shaddick2015spatio}.   
 
 Different from Kriging, INLA is a deterministic model and not a statistical method of optimization (e.g. as the maximum likelihood method). As all the estimations are approximations, it is advantageous when use a big number of observations and especially for spatio-temporal models. These are important for extending the model to larger scales (e.g. global-scale) and in space-time. 
 
 Model performance differ between the three road and population situations. the "far" situation obtained the best modelling accuracy while the "tr-hp" the worst. This is likely due to the fact that the urban NO2 process is more complex due to urban forms and traffic conditions. This may also indicates that more detailed traffic counts and meteorological data are needed for modelling the NO2 emission sources.  
+
+\section{Conclusion}
+We proposed a model comparison framework to comprehensively compare between models considering not only the predicted mean but also prediction intervals and model interpretation. We also show that the information provided by commonly single-used non-spatial CV may miss to reflect model behaviour in different areas. Our statistical spatial NO2 prediction model comparison study between geostatistical and ML methods indicates the strength and limitations of different methods. The geostatistical models are preferred models especially for urban area prediction and are capable of indicating the necessity of modelling the spatial process. 
+
+%We propose the same model ev
 
 \newpage
 \bibliographystyle{abbrvnat}
